@@ -1,0 +1,27 @@
+---
+- name: Ensure community.docker collection is present (if running offline, install prior)
+  ansible.builtin.debug:
+    msg: "Make sure 'ansible-galaxy collection install -r requirements.yml' was run."
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ deploy_path }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Copy .env (optional convenience)
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ deploy_path }}/.env"
+    mode: "0600"
+
+- name: Build and start services (docker compose v2)
+  community.docker.docker_compose_v2:
+    project_src: "{{ deploy_path }}"
+    build: always
+    state: present
+  register: dc_result
+
+- name: Show compose result
+  ansible.builtin.debug:
+    var: dc_result

@@ -1,0 +1,39 @@
+{{- if .Values.cleanup.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "wordpress.fullname" . }}-cleanup
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cleanup
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      name: {{ include "wordpress.fullname" . }}-cleanup
+      labels:
+        {{- include "wordpress.labels" . | nindent 8 }}
+        app.kubernetes.io/component: cleanup
+    spec:
+      serviceAccountName: {{ include "wordpress.serviceAccountName" . }}
+      restartPolicy: Never
+      containers:
+      - name: cleanup
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          echo "Cleaning up PVCs for release {{ .Release.Name }}"
+          {{- if .Values.cleanup.pvc.mysql }}
+          kubectl delete pvc mysql-data-{{ include "wordpress.fullname" . }}-mysql-0 --ignore-not-found=true
+          {{- end }}
+          {{- if .Values.cleanup.pvc.wordpress }}
+          kubectl delete pvc {{ include "wordpress.fullname" . }}-wordpress-pvc --ignore-not-found=true
+          {{- end }}
+          echo "Cleanup completed"
+{{- end }}

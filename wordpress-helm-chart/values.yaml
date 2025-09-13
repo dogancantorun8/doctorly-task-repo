@@ -1,0 +1,252 @@
+# Default values for wordpress.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# WordPress configuration
+wordpress:
+  image:
+    repository: wordpress
+    tag: "6.3"
+    pullPolicy: IfNotPresent
+
+  replicaCount: 1
+
+  # WordPress admin configuration
+  adminUser: admin
+  adminPassword: ""  # If empty, will be auto-generated
+  adminEmail: admin@example.com
+  siteTitle: "WordPress Site"
+  siteUrl: ""  # Will be auto-configured based on service type
+
+  # WordPress configuration
+  config:
+    debug: false
+    memoryLimit: "256M"
+    maxFileUploads: 20
+    uploadMaxFilesize: "32M"
+    postMaxSize: "32M"
+    maxExecutionTime: 300
+    maxInputVars: 3000
+
+  # Resource configuration
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Autoscaling configuration
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  # Node selector and affinity
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  # Pod Security Context for WordPress pods
+  podSecurityContext:
+    fsGroup: 33
+
+  # Container Security Context for WordPress container
+  containerSecurityContext:
+    runAsUser: 33  # www-data user
+    runAsGroup: 33
+
+  # Probes configuration
+  livenessProbe:
+    httpGet:
+      path: /wp-admin/install.php
+      port: 80
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  readinessProbe:
+    httpGet:
+      path: /wp-login.php
+      port: 80
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  # Persistence configuration
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    annotations: {}
+
+# MySQL configuration
+mysql:
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+
+  # MySQL authentication
+  auth:
+    rootPassword: ""  # If empty, will be auto-generated
+    database: wordpress
+    username: wordpress
+    password: ""  # If empty, will be auto-generated
+
+  # MySQL configuration
+  config:
+    maxConnections: 151
+    innodbBufferPoolSize: "128M"
+    innodbLogFileSize: "48M"
+    innodbFlushLogAtTrxCommit: 1
+    innodbFlushMethod: "O_DIRECT"
+    queryCache: true
+    queryCacheSize: "16M"
+
+  # Resource configuration
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Pod Security Context for MySQL pods
+  podSecurityContext:
+    fsGroup: 999
+
+  # Container Security Context for MySQL container
+  containerSecurityContext:
+    runAsUser: 999  # mysql user
+    runAsGroup: 999
+
+  # Probes configuration
+  livenessProbe:
+    exec:
+      command:
+        - mysqladmin
+        - ping
+        - -h
+        - localhost
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+
+  readinessProbe:
+    exec:
+      command:
+        - mysqladmin
+        - ping
+        - -h
+        - localhost
+    initialDelaySeconds: 5
+    periodSeconds: 2
+    timeoutSeconds: 1
+    failureThreshold: 3
+    successThreshold: 1
+
+  # Persistence configuration
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 8Gi
+    annotations: {}
+
+# Service configuration
+service:
+  wordpress:
+    type: LoadBalancer
+    port: 80
+    targetPort: 80
+    nodePort: ""
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    annotations: {}
+    sessionAffinity: ClientIP
+    sessionAffinityConfig:
+      clientIP:
+        timeoutSeconds: 86400
+
+  mysql:
+    type: ClusterIP
+    port: 3306
+    targetPort: 3306
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: wordpress.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: wordpress-tls
+    #   hosts:
+    #     - wordpress.local
+
+# NetworkPolicy configuration
+networkPolicy:
+  enabled: false
+  ingress:
+    from: []
+  egress:
+    to: []
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Policy
+podSecurityPolicy:
+  enabled: false
+
+# Common labels
+commonLabels: {}
+
+# Common annotations
+commonAnnotations: {}
+
+# Extra environment variables
+extraEnvVars: []
+  # - name: CUSTOM_VAR
+  #   value: "custom_value"
+
+# Cleanup configuration
+cleanup:
+  enabled: true  # Enable PVC cleanup on uninstall for development
+  pvc:
+    mysql: true      # Clean MySQL PVC
+    wordpress: true  # Clean WordPress PVC
+
+# Init containers
+initContainers: []
+
+# Additional containers
+sidecars: []
+
+# Extra volumes
+extraVolumes: []
+
+# Extra volume mounts
+extraVolumeMounts: []

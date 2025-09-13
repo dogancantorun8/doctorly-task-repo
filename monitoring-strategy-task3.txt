@@ -1,0 +1,40 @@
+Monitoring Strategy (Step-by-Step Roadmap)
+
+1. Define Needs (SLI/SLOs)
+   - Start by identifying what to measure: system health (CPU, disk, memory), 
+     application performance (latency, error rate), and business metrics 
+     (transactions, orders).
+   - Define SLOs/thresholds for critical services (e.g., CPU > 90% for 5 minutes, 
+     disk usage > 80%).
+
+2. Centralized Monitoring Setup
+   - Deploy a dedicated monitoring VM outside of production.
+   - Run Prometheus (metrics collection) and Grafana (visualization) on this VM 
+     to minimize load on production instances.
+
+3. Agent / Exporter Deployment
+   - Install Node Exporter on each Ubuntu production instance to capture 
+     host-level metrics (CPU, disk, memory, I/O, network).
+   - Add application-specific exporters if needed (e.g., nginx exporter, 
+     postgres exporter).
+
+4. Alerting and Automation
+   - Configure basic system alerts: high CPU, memory pressure, disk usage, 
+     network issues.
+   - Configure application alerts: high error rate, slow response time, 
+     service downtime.
+   - Use Alertmanager to route alerts to Slack/email/PagerDuty.
+   - Link alerts to runbooks so engineers know exactly how to respond.
+
+5. Visualization and Analysis
+   Build Grafana dashboards for:
+   - Host metrics (CPU, disk, memory)
+   - Application metrics (requests/sec, error rates)
+   - Database metrics (query latency, replication lag)
+   - Provide role-based access for different teams.
+
+6. Continuous Improvement
+   - Regularly review alerts to reduce noise and avoid alert fatigue.
+   - Use trend analysis for capacity planning.
+   - Treat monitoring as code: when new services are deployed, add corresponding 
+     exporters, dashboards, and alerting rules via GitOps.

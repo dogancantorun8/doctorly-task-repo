@@ -1,0 +1,112 @@
+{{- if .Values.mysql.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wordpress.mysql.configMapName" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+  {{- with (include "wordpress.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  custom.cnf: |
+    [mysqld]
+    # MySQL custom configuration
+    max_connections = {{ .Values.mysql.config.maxConnections | default 151 }}
+    innodb_buffer_pool_size = {{ .Values.mysql.config.innodbBufferPoolSize | default "128M" }}
+    innodb_log_file_size = {{ .Values.mysql.config.innodbLogFileSize | default "48M" }}
+    innodb_flush_log_at_trx_commit = {{ .Values.mysql.config.innodbFlushLogAtTrxCommit | default 1 }}
+    {{- if .Values.mysql.config.innodbFlushMethod }}
+    innodb_flush_method = {{ .Values.mysql.config.innodbFlushMethod }}
+    {{- end }}
+
+    # Query cache removed in MySQL 8.0
+    # MySQL 8.0 uses InnoDB buffer pool instead
+
+    # Character set
+    character-set-server = utf8mb4
+    collation-server = utf8mb4_unicode_ci
+
+    # Binary logging
+    log-bin = mysql-bin
+    binlog_format = ROW
+    expire_logs_days = 7
+
+    # Security settings
+    local-infile = 0
+    skip-symbolic-links
+
+    # Performance settings
+    tmp_table_size = 64M
+    max_heap_table_size = 64M
+    sort_buffer_size = 2M
+    read_buffer_size = 2M
+    read_rnd_buffer_size = 8M
+    myisam_sort_buffer_size = 64M
+    thread_cache_size = 8
+
+    [mysql]
+    default-character-set = utf8mb4
+
+    [client]
+    default-character-set = utf8mb4
+{{- end }}
+
+---
+{{- if .Values.wordpress.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wordpress.configMapName" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+  {{- with (include "wordpress.annotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+data:
+  php.ini: |
+    ; WordPress PHP configuration
+    memory_limit = {{ .Values.wordpress.config.memoryLimit | default "256M" }}
+    upload_max_filesize = {{ .Values.wordpress.config.uploadMaxFilesize | default "32M" }}
+    post_max_size = {{ .Values.wordpress.config.postMaxSize | default "32M" }}
+    max_execution_time = {{ .Values.wordpress.config.maxExecutionTime | default 300 }}
+    max_input_time = {{ .Values.wordpress.config.maxExecutionTime | default 300 }}
+    max_input_vars = {{ .Values.wordpress.config.maxInputVars | default 3000 }}
+    max_file_uploads = {{ .Values.wordpress.config.maxFileUploads | default 20 }}
+
+    ; Security settings
+    expose_php = Off
+    allow_url_fopen = Off
+    allow_url_include = Off
+
+    ; Error reporting
+    {{- if .Values.wordpress.config.debug }}
+    display_errors = On
+    display_startup_errors = On
+    log_errors = On
+    error_reporting = E_ALL
+    {{- else }}
+    display_errors = Off
+    display_startup_errors = Off
+    log_errors = On
+    error_reporting = E_ERROR
+    {{- end }}
+
+    ; Session settings
+    session.cookie_httponly = 1
+    session.cookie_secure = 1
+    session.use_strict_mode = 1
+
+    ; Opcache settings
+    opcache.enable = 1
+    opcache.memory_consumption = 128
+    opcache.interned_strings_buffer = 8
+    opcache.max_accelerated_files = 4000
+    opcache.revalidate_freq = 2
+    opcache.fast_shutdown = 1
+{{- end }}

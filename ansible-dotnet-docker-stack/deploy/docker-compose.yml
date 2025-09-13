@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  demoapi:
+    build:
+      context: "/home/dtorun/GIT/assigment-doctorly/ansible-dotnet-docker-stack/app"
+      dockerfile: Dockerfile
+    image: demoapi:latest
+    container_name: dotnet_stack_demoapi
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=appdb;Username=appuser;Password=supersecret
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      - appnet
+
+  db:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=appuser
+      - POSTGRES_PASSWORD=supersecret
+      - POSTGRES_DB=appdb
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local

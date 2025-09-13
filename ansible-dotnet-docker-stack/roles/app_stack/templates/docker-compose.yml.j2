@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  {{ app_name }}:
+    build:
+      context: "{{ app_source_path }}"
+      dockerfile: Dockerfile
+    image: {{ app_image_name }}
+    container_name: {{ project_name }}_{{ app_name }}
+    environment:
+      - ASPNETCORE_URLS=http://+:{{ app_port }}
+{% if db_engine == 'postgres' %}
+      - ConnectionStrings__DefaultConnection=Host=db;Port={{ postgres_port }};Database={{ db_name }};Username={{ db_user }};Password={{ db_password }}
+{% else %}
+      - ConnectionStrings__DefaultConnection=Server=db;Port={{ mysql_port }};Database={{ db_name }};User={{ db_user }};Password={{ db_password }}
+{% endif %}
+    ports:
+      - "{{ app_port }}:{{ app_port }}"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ app_port }}/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      - appnet
+
+  db:
+{% if db_engine == 'postgres' %}
+    image: postgres:{{ postgres_version }}
+    environment:
+      - POSTGRES_USER={{ db_user }}
+      - POSTGRES_PASSWORD={{ db_password }}
+      - POSTGRES_DB={{ db_name }}
+    ports:
+      - "{{ postgres_port }}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ db_user }} -d {{ db_name }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+{% else %}
+    image: mysql:{{ mysql_version }}
+    environment:
+      - MYSQL_USER={{ db_user }}
+      - MYSQL_PASSWORD={{ db_password }}
+      - MYSQL_DATABASE={{ db_name }}
+      - MYSQL_ROOT_PASSWORD={{ db_password }}
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    ports:
+      - "{{ mysql_port }}:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u{{ db_user }} -p{{ db_password }} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+{% endif %}
+    volumes:
+      - dbdata:/var/lib/{{ 'postgresql/data' if db_engine == 'postgres' else 'mysql' }}
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local

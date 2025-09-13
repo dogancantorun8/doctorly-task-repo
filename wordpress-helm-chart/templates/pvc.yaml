@@ -1,0 +1,61 @@
+{{- if .Values.wordpress.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "wordpress.pvcName" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+  {{- with .Values.wordpress.persistence.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with (include "wordpress.annotations" .) }}
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.wordpress.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.wordpress.persistence.size | quote }}
+  {{- if .Values.wordpress.persistence.storageClass }}
+  {{- if (eq "-" .Values.wordpress.persistence.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.wordpress.persistence.storageClass | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+
+---
+{{- if .Values.mysql.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "wordpress.mysql.pvcName" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+  {{- with .Values.mysql.persistence.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with (include "wordpress.annotations" .) }}
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.mysql.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.mysql.persistence.size | quote }}
+  {{- if .Values.mysql.persistence.storageClass }}
+  {{- if (eq "-" .Values.mysql.persistence.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.mysql.persistence.storageClass | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

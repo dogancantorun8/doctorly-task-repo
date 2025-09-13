@@ -1,0 +1,23 @@
+apiVersion: v2
+name: wordpress
+description: A Helm chart for WordPress on Kubernetes with MySQL backend
+type: application
+version: 0.1.0
+appVersion: "6.3"
+keywords:
+  - wordpress
+  - cms
+  - blog
+  - php
+  - mysql
+maintainers:
+  - name: Helm Chart Developer
+    email: developer@example.com
+home: https://wordpress.org/
+sources:
+  - https://github.com/WordPress/WordPress
+  - https://hub.docker.com/_/wordpress
+  - https://hub.docker.com/_/mysql
+icon: https://bitnami.com/assets/stacks/wordpress/img/wordpress-stack-220x234.png
+annotations:
+  category: CMS

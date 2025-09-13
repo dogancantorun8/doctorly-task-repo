@@ -1,0 +1,29 @@
+project_name: dotnet_stack
+
+# Choose 'postgres' or 'mysql'
+db_engine: postgres
+
+# Application
+app_name: demoapi
+app_source_path: "{{ playbook_dir }}/app"   # path to the .NET project
+app_port: 8080
+app_image_name: "demoapi:latest"
+
+# Database common
+db_user: appuser
+db_password: supersecret
+db_name: appdb
+
+# Postgres specific
+postgres_version: "16"
+postgres_port: 5432
+
+# MySQL specific
+mysql_version: "8.4"
+mysql_port: 3306
+
+# Where docker-compose.yml will live
+deploy_path: "{{ playbook_dir }}/deploy"
+
+# Skip Docker installation if it's already installed
+skip_docker_install: false
